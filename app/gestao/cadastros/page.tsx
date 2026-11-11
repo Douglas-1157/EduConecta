@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 export default async function Cadastros() {
   const { db } = await exigirPerfil('gestao');
   const [{ data: pend }, { data: recusados }, { data: profs }, { data: turmas }, { data: vinc }] = await Promise.all([
-    db.from('profiles').select('id,nome,matricula,created_at,turmas(nome)').eq('status', 'pendente').order('created_at'),
-    db.from('profiles').select('id,nome,turmas(nome)').eq('status', 'recusado').order('created_at', { ascending: false }).limit(10),
+    db.from('profiles').select('id,nome,matricula,created_at,turmas!profiles_turma_id_fkey(nome)').eq('status', 'pendente').order('created_at'),
+    db.from('profiles').select('id,nome,turmas!profiles_turma_id_fkey(nome)').eq('status', 'recusado').order('created_at', { ascending: false }).limit(10),
     db.from('profiles').select('id,nome').eq('papel', 'professor').eq('status', 'ativo').order('nome'),
     db.from('turmas').select('id,nome').order('nome'),
     db.from('professor_turmas').select('professor_id,turma_id'),
