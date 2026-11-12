@@ -63,6 +63,7 @@ setEnviado(true);
               {modo === 'criar' && <p className="note full">Seu cadastro fica pendente até a gestão da escola aprovar. Professores recebem o acesso direto da gestão.</p>}
               {erro && <p className="erro full" role="alert">{erro}</p>}
               <div className="full row"><button className="btn pri lg" type="submit" disabled={ocupado}>{ocupado ? 'Aguarde…' : modo === 'entrar' ? 'Entrar' : 'Enviar cadastro'}</button></div>
+              {modo === 'entrar' && <div className="full"><Link href="/recuperar" className="btn sm ghost" style={{ paddingLeft: 0 }}>Esqueci a senha</Link></div>}
             </form>
             <button className="btn ghost" onClick={() => { setErro(''); setModo(modo === 'entrar' ? 'criar' : 'entrar'); }} style={{ alignSelf: 'flex-start' }}>
               {modo === 'entrar' ? 'Primeiro acesso? Criar conta' : 'Já tenho conta'}

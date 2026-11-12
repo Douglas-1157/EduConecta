@@ -1,5 +1,5 @@
 'use server';
-import { supabaseServer } from '@/lib/supabase/server'; // ajuste o nome (veja abaixo)
+import { supabaseServer } from '@/lib/supabase/server';
 import { enviarEmail, esc } from '@/lib/emails';
 import { emailsPorPapel } from '@/lib/destinatarios';
 

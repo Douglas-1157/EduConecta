@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '../supabase/server';
 import { supabaseAdmin } from '../supabase/admin';
 import type { Estado } from '@/components/Form';
+import { enviarEmail, esc } from '../emails';
+import { emailDoUsuario } from '../destinatarios';
 
 const ok = (msg = 'Salvo.'): Estado => ({ ok: true, msg });
 const no = (msg: string): Estado => ({ ok: false, msg });
@@ -18,6 +20,22 @@ async function equipe() {
   return { db, id: p.id as string, papel: p.papel as 'professor' | 'gestao' };
 }
 async function gestao() { const e = await equipe(); return e && e.papel === 'gestao' ? e : null; }
+
+// Competência: usa a escolhida na lista ou cria uma nova a partir do texto digitado.
+async function resolverCompetencia(db: any, fd: FormData, disciplinaId: string): Promise<string | null> {
+  const novo = txt(fd, 'competencia_nova').slice(0, 80);
+  if (!novo) return txt(fd, 'competencia_id') || null;
+  const { data: d } = await db.from('disciplinas').select('area').eq('id', disciplinaId).single();
+  if (!d) return null;
+  const { data: ex } = await db.from('competencias').select('id').eq('area', d.area).ilike('nome', novo.replace(/[%_\\]/g, m => '\\' + m)).limit(1).maybeSingle();
+  if (ex) return ex.id;
+  const { count } = await db.from('competencias').select('id', { count: 'exact', head: true }).eq('area', d.area);
+  for (let i = 0; i < 5; i++) {
+    const { data } = await db.from('competencias').insert({ area: d.area, codigo: 'P' + ((count ?? 0) + 1 + i), nome: novo }).select('id').single();
+    if (data) return data.id;
+  }
+  return null;
+}
 
 // ---------- Conteúdo ----------
 export async function publicarItem(_: Estado, fd: FormData): Promise<Estado> {
@@ -49,7 +67,7 @@ export async function publicarItem(_: Estado, fd: FormData): Promise<Estado> {
   } else if (tipo === 'pdf' && !url) return no('Anexe o PDF da apostila ou cole um link.');
   const { count: n } = await db.from('itens').select('id', { count: 'exact', head: true }).eq('modulo_id', moduloId);
   const { data: item, error } = await db.from('itens').insert({
-    modulo_id: moduloId, tipo, titulo, minutos: num(fd, 'minutos', 20), competencia_id: txt(fd, 'competencia_id') || null,
+    modulo_id: moduloId, tipo, titulo, minutos: num(fd, 'minutos', 20), competencia_id: await resolverCompetencia(db, fd, disciplina),
     url, arquivo_path: arquivo, ordem: (n ?? 0) + 1, criado_por: e.id,
   }).select('id').single();
   if (error) return no(error.message);
@@ -86,7 +104,7 @@ export async function criarQuestao(_: Estado, fd: FormData): Promise<Estado> {
   if (alts.length < 2) return no('Informe ao menos duas alternativas.');
   if (!(correta >= 0 && correta < alts.length)) return no('Marque a alternativa correta.');
   const { error } = await e.db.from('questoes').insert({
-    disciplina_id: txt(fd, 'disciplina_id'), competencia_id: txt(fd, 'competencia_id') || null, enunciado: txt(fd, 'enunciado'),
+    disciplina_id: txt(fd, 'disciplina_id'), competencia_id: await resolverCompetencia(e.db, fd, txt(fd, 'disciplina_id')), enunciado: txt(fd, 'enunciado'),
     alternativas: alts, correta, comentario: txt(fd, 'comentario') || null, criado_por: e.id,
   });
   if (error) return no(error.message);
@@ -123,7 +141,7 @@ export async function criarSimulado(_: Estado, fd: FormData): Promise<Estado> {
 export async function responderDuvida(_: Estado, fd: FormData): Promise<Estado> {
   const e = await equipe(); if (!e) return no('Sem permissão.');
   const resposta = txt(fd, 'resposta'); if (resposta.length < 2) return no('Escreva a resposta.');
-  const { error } = await e.db.from('duvidas').update({ resposta, status: 'respondida', respondida_por: e.id, respondida_em: new Date().toISOString() }).eq('id', txt(fd, 'id'));
+  const { error } = await e.db.from('duvidas').update({ resposta, status: 'respondida', visto_em: null, respondida_por: e.id, respondida_em: new Date().toISOString() }).eq('id', txt(fd, 'id'));
   if (error) return no(error.message);
   if (fd.get('salvar')) await e.db.from('respostas_salvas').insert({ professor_id: e.id, texto: resposta.slice(0, 1000) });
   revalidatePath('/professor/duvidas'); return ok('Resposta enviada.');
@@ -152,7 +170,12 @@ export async function corrigirRedacao(_: Estado, fd: FormData): Promise<Estado> 
 // ---------- Gestão ----------
 export async function decidirCadastro(id: string, aprovar: boolean) {
   const e = await gestao(); if (!e) return;
-  await e.db.from('profiles').update({ status: aprovar ? 'ativo' : 'recusado' }).eq('id', id);
+  const { data: alvo } = await e.db.from('profiles').select('nome,status').eq('id', id).single();
+  const { error } = await e.db.from('profiles').update({ status: aprovar ? 'ativo' : 'recusado' }).eq('id', id);
+  if (!error && alvo && aprovar && alvo.status !== 'ativo') {
+    const to = await emailDoUsuario(id);
+    if (to) await enviarEmail({ to, subject: 'Seu acesso ao EduConecta foi liberado', html: `<p>Olá, ${esc(alvo.nome)}!</p><p>A gestão autorizou o seu acesso. Já é possível entrar no EduConecta com o seu e-mail e a senha cadastrada.</p>` });
+  }
   revalidatePath('/gestao', 'layout');
 }
 export async function criarTurma(_: Estado, fd: FormData): Promise<Estado> {

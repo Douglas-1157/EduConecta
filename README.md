@@ -78,3 +78,11 @@ supabase/       migrations (schema, funções, RLS, storage), seeds
 ## Segurança
 Rode também `0005_professor_turmas.sql` e `0006_endurecimento.sql` (Supabase → SQL Editor).
 No painel do Supabase: Authentication → Providers → Email: senha mínima 8+, e ative proteção de senha vazada (Leaked password protection) se disponível; em Authentication → URL Configuration, deixe só o domínio da Vercel.
+
+## E-mails (Resend)
+Variáveis na Vercel: `RESEND_API_KEY` e, com domínio verificado no Resend, `EMAIL_FROM` (ex.: `EduConecta <avisos@seudominio.com.br>`).
+Sem a chave o sistema funciona normalmente, só não envia e-mails. Avisos: cadastro recebido (aluno), novo aluno (gestão) e acesso liberado (aluno).
+
+## Recuperação de senha
+Telas: `/recuperar` (pede o e-mail) e `/redefinir` (nova senha). No Supabase, em Authentication → URL Configuration, o Site URL e a Redirect URL `https://SEU-SITE/**` precisam estar cadastrados.
+Atenção: o envio de e-mail padrão do Supabase só entrega para membros da equipe do projeto. Para os alunos receberem, configure um SMTP próprio (Authentication → Emails → SMTP Settings; o Resend oferece SMTP).

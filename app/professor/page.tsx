@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { exigirPerfil } from '@/lib/sessao';
+import { turmasVisiveis } from '@/lib/escopo';
 import { riscoDe } from '@/lib/risco';
 import { Av, Pb, fmtMin, saudacao, primeiroNome } from '@/components/ui';
 
@@ -9,7 +10,7 @@ export default async function PainelTurmas({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const { perfil, db } = await exigirPerfil();
   const [{ data: turmas }, { data: alunos }] = await Promise.all([
-    db.from('turmas').select('id,nome,turno,trava_progressiva').order('nome'),
+    turmasVisiveis(db, perfil),
     db.from('painel_alunos').select('*'),
   ]);
   const lista = (alunos ?? []).filter(a => !sp.turma || a.turma_id === sp.turma).map(a => ({ ...a, r: riscoDe(a.ultimo_estudo, a.min_semana, a.meta_semanal_min) }));

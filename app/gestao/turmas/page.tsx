@@ -22,7 +22,7 @@ export default async function Turmas() {
               <Acao action={alternarTrava.bind(null, t.id, !t.trava_progressiva) as any}>{t.trava_progressiva ? 'Trava ligada: desligar' : 'Trava desligada: ligar'}</Acao></div>
               <p className="sub" style={{ fontSize: 13, marginTop: 6 }}>Com a trava ligada, o aluno libera uma etapa de cada vez.</p></div>); })}
           <div className="card"><h2 className="h2" style={{ marginBottom: 6 }}>Alunos</h2><div className="list">{alunos?.length ? alunos.map(a => (
-            <div key={a.id} className="li"><Av nome={a.nome} sm /><div className="tx"><b>{a.nome}</b></div>
+            <div key={`${a.id}:${a.turma_id ?? ""}`} className="li"><Av nome={a.nome} sm /><div className="tx"><b>{a.nome}</b></div>
               <Form action={moverAluno} className="row" botao="Mover" pri={false}><input type="hidden" name="id" value={a.id} /><select name="turma_id" className="inp" defaultValue={a.turma_id ?? ''} style={{ width: 130 }} aria-label={`Turma de ${a.nome}`}><option value="">Sem turma</option>{turmas?.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}</select></Form></div>)) : <div className="empty">Nenhum aluno ativo.</div>}</div></div>
         </div>
         <div className="stack">

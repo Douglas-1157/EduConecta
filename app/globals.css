@@ -511,3 +511,14 @@ textarea.inp{resize:vertical;min-height:120px;line-height:1.5}
 html{scroll-behavior:smooth}
 .lnav nav a{text-decoration:none;color:var(--mute);font-weight:500;padding:8px 10px;border-radius:8px}
 .lnav nav a:hover{color:var(--ink);background:var(--shell)}
+
+/* Texto longo nunca vaza do cartão; colunas de grid podem encolher */
+.cols>*,.stack>*,.card{min-width:0}
+.card p,.card .tx,.li .tx{overflow-wrap:anywhere}
+@media (max-width:520px){
+  .lnav .wrap{gap:8px}
+  .lnav a.btn:not(.dk){display:none}
+  .lnav .btn{padding:0 12px;font-size:14px}
+}
+
+.bnav a span,.bnav button span{text-align:center;line-height:1.15}

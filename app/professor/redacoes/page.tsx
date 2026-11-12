@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { exigirPerfil } from '@/lib/sessao';
+import { turmasVisiveis } from '@/lib/escopo';
 import { Av } from '@/components/ui';
 import { Form } from '@/components/Form';
 import { criarTemaRedacao } from '@/lib/acoes/equipe';
@@ -8,10 +9,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function Redacoes({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   const sp = await searchParams; const aba = sp.aba === 'corrigidas' ? 'corrigida' : 'enviada';
-  const { db } = await exigirPerfil();
+  const { db, perfil } = await exigirPerfil();
   const [{ data: reds }, { data: turmas }, { data: temas }] = await Promise.all([
     db.from('redacoes').select('id,nota,enviada_em,corrigida_em,profiles!redacoes_aluno_id_fkey(nome),redacao_temas(titulo)').eq('status', aba).order(aba === 'enviada' ? 'enviada_em' : 'corrigida_em', { ascending: aba === 'enviada' }),
-    db.from('turmas').select('id,nome').order('nome'),
+    turmasVisiveis(db, perfil),
     db.from('redacao_temas').select('id,titulo,prazo,redacao_tema_turmas(turmas(nome))').order('created_at', { ascending: false }),
   ]);
   return (

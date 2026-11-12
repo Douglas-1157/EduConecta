@@ -1,16 +1,17 @@
 import { exigirPerfil } from '@/lib/sessao';
+import { turmasVisiveis } from '@/lib/escopo';
 import { criarQuestao, criarSimulado } from '@/lib/acoes/equipe';
 import { Banco } from './Banco';
 
 export const dynamic = 'force-dynamic';
 
 export default async function BancoPage() {
-  const { db } = await exigirPerfil();
+  const { db, perfil } = await exigirPerfil();
   const [{ data: disc }, { data: comps }, { data: qs }, { data: turmas }, { data: mods }, { data: sims }] = await Promise.all([
     db.from('disciplinas').select('id,nome,area').order('ordem'),
     db.from('competencias').select('id,area,codigo,nome').order('area').order('codigo'),
     db.from('questoes').select('id,enunciado,disciplina_id,alternativas,correta,competencias(codigo)').order('created_at', { ascending: false }),
-    db.from('turmas').select('id,nome').order('nome'),
+    turmasVisiveis(db, perfil),
     db.from('modulos').select('id,nome,disciplina_id').order('ordem'),
     db.from('simulados').select('id,titulo,minutos,simulado_questoes(count),simulado_turmas(turmas(nome))').order('created_at', { ascending: false }),
   ]);

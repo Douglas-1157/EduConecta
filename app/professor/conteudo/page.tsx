@@ -1,4 +1,5 @@
 import { exigirPerfil } from '@/lib/sessao';
+import { turmasVisiveis } from '@/lib/escopo';
 import { Form, Acao } from '@/components/Form';
 import { Icon } from '@/components/Icon';
 import { publicarItem, alternarPublicacao, apagarItem, criarRecurso, apagarRecurso } from '@/lib/acoes/equipe';
@@ -7,12 +8,12 @@ import { FormItem } from './FormItem';
 export const dynamic = 'force-dynamic';
 
 export default async function Conteudo() {
-  const { db } = await exigirPerfil();
+  const { db, perfil } = await exigirPerfil();
   const [{ data: disc }, { data: mods }, { data: comps }, { data: turmas }, { data: itens }, { data: recursos }] = await Promise.all([
     db.from('disciplinas').select('id,nome,area').order('ordem'),
     db.from('modulos').select('id,nome,disciplina_id,ordem').order('ordem'),
     db.from('competencias').select('id,area,codigo,nome').order('area').order('codigo'),
-    db.from('turmas').select('id,nome').order('nome'),
+    turmasVisiveis(db, perfil),
     db.from('itens').select('id,tipo,titulo,publicado,modulos(nome,disciplinas(nome)),item_turmas(turmas(nome),prazo)').order('created_at', { ascending: false }).limit(60),
     db.from('recursos').select('*').order('created_at', { ascending: false }),
   ]);
