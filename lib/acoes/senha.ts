@@ -2,6 +2,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '../supabase/server';
+import { supabaseAdmin } from '../supabase/admin';
 import type { Estado } from '@/components/Form';
 
 // Pede o e-mail de recuperação. A resposta é sempre a mesma, exista o e-mail ou não.
@@ -25,5 +26,6 @@ export async function redefinirSenha(_: Estado, fd: FormData): Promise<Estado> {
   if (!user) return { ok: false, msg: 'O link expirou. Peça um novo em "Esqueci a senha".' };
   const { error } = await db.auth.updateUser({ password: senha });
   if (error) return { ok: false, msg: error.message.includes('different') ? 'Escolha uma senha diferente da atual.' : 'Não foi possível trocar a senha. Tente de novo.' };
+  if (user.app_metadata?.trocar_senha) await supabaseAdmin().auth.admin.updateUserById(user.id, { app_metadata: { trocar_senha: false } });
   redirect('/painel');
 }

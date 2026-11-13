@@ -18,7 +18,7 @@ export default async function BancoPage() {
   return (
     <>
       <div><h1 className="h1">Banco de questões</h1><p className="sub">Cadastre questões com gabarito comentado e monte simulados para as turmas.</p></div>
-      <Banco disciplinas={disc ?? []} competencias={comps ?? []} turmas={turmas ?? []} modulos={mods ?? []}
+      <Banco padrao={perfil.disciplina_id ?? undefined} disciplinas={disc ?? []} competencias={comps ?? []} turmas={turmas ?? []} modulos={mods ?? []}
         questoes={(qs ?? []).map((q: any) => ({ id: q.id, enunciado: q.enunciado, disciplina_id: q.disciplina_id, n: q.alternativas.length, comp: q.competencias?.codigo ?? null }))}
         criarQuestao={criarQuestao} criarSimulado={criarSimulado} />
       <div className="card"><h2 className="h2" style={{ marginBottom: 6 }}>Simulados publicados</h2>

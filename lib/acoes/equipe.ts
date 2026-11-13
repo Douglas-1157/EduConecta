@@ -59,7 +59,7 @@ export async function publicarItem(_: Estado, fd: FormData): Promise<Estado> {
   const file = fd.get('arquivo');
   if (tipo === 'pdf' && file instanceof File && file.size > 0) {
     if (file.type !== 'application/pdf') return no('Envie o arquivo em PDF.');
-    if (file.size > 20 * 1024 * 1024) return no('O PDF passa de 20 MB.');
+    if (file.size > 10 * 1024 * 1024) return no(`Esse PDF tem ${(file.size / 1048576).toFixed(1)} MB e o limite é 10 MB. Comprima em ilovepdf.com ou smallpdf.com e envie de novo.`);
     if (new TextDecoder().decode(new Uint8Array(await file.slice(0, 5).arrayBuffer())) !== '%PDF-') return no('Esse arquivo não é um PDF válido.');
     arquivo = `apostilas/${crypto.randomUUID()}.pdf`;
     const up = await db.storage.from('conteudo').upload(arquivo, file, { contentType: 'application/pdf' });
@@ -202,9 +202,9 @@ export async function criarProfessor(_: Estado, fd: FormData): Promise<Estado> {
   if (!nome || !email || senha.length < 8) return no('Informe nome, e-mail e uma senha provisória de 8+ caracteres.');
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return no('Falta configurar SUPABASE_SERVICE_ROLE_KEY no servidor.');
   const admin = supabaseAdmin();
-  const { data, error } = await admin.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { nome } });
+  const { data, error } = await admin.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { nome }, app_metadata: { trocar_senha: true } });
   if (error || !data.user) return no(error?.message ?? 'Não foi possível criar a conta.');
-  const { error: e2 } = await admin.from('profiles').update({ papel: fd.get('gestao') ? 'gestao' : 'professor', status: 'ativo' }).eq('id', data.user.id);
+  const { error: e2 } = await admin.from('profiles').update({ papel: fd.get('gestao') ? 'gestao' : 'professor', status: 'ativo', disciplina_id: txt(fd, 'disciplina_id') || null }).eq('id', data.user.id);
   if (e2) return no(e2.message);
   revalidatePath('/gestao', 'layout'); return ok('Conta criada. Passe o e-mail e a senha provisória à pessoa.');
 }
@@ -214,11 +214,13 @@ export async function definirTurmasProfessor(_: Estado, fd: FormData): Promise<E
   const e = await gestao(); if (!e) return no('Apenas a gestão define isso.');
   const prof = txt(fd, 'professor_id'); if (!prof) return no('Escolha o professor.');
   const turmas = fd.getAll('turmas').map(String).filter(Boolean);
+  const { error: e0 } = await e.db.from('profiles').update({ disciplina_id: txt(fd, 'disciplina_id') || null }).eq('id', prof);
+  if (e0) return no(e0.message);
   const { error: e1 } = await e.db.from('professor_turmas').delete().eq('professor_id', prof);
   if (e1) return no(e1.message);
   if (turmas.length) { const { error } = await e.db.from('professor_turmas').insert(turmas.map(t => ({ professor_id: prof, turma_id: t }))); if (error) return no(error.message); }
   revalidatePath('/gestao', 'layout'); revalidatePath('/professor', 'layout');
-  return ok(turmas.length ? 'Turmas do professor atualizadas.' : 'Sem turmas marcadas: o professor volta a ver todas.');
+  return ok(turmas.length ? 'Disciplina e turmas atualizadas.' : 'Sem turmas marcadas: o professor não verá nenhuma turma.');
 }
 
 // Importa alunos de uma planilha salva como CSV (colunas: nome, email, matricula, turma).
@@ -247,7 +249,7 @@ export async function importarAlunos(_: Estado, fd: FormData): Promise<Estado> {
     if (!nome || !email || !/^\S+@\S+\.\S+$/.test(email)) { erros.push(`linha ${i + 1}: nome/e-mail inválido`); continue; }
     const turma = iT >= 0 && c[iT] ? porNome.get(norm(c[iT])) : undefined;
     if (iT >= 0 && c[iT] && !turma) { erros.push(`linha ${i + 1}: turma "${c[iT]}" não existe`); continue; }
-    const { data, error } = await admin.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { nome, matricula: iM >= 0 ? c[iM] : '', turma_id: turma ?? '' } });
+    const { data, error } = await admin.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { nome, matricula: iM >= 0 ? c[iM] : '', turma_id: turma ?? '' }, app_metadata: { trocar_senha: true } });
     if (error || !data.user) { erros.push(`linha ${i + 1}: ${/already|registered/i.test(error?.message ?? '') ? 'e-mail já cadastrado' : error?.message}`); continue; }
     await admin.from('profiles').update({ status: 'ativo' }).eq('id', data.user.id);
     criados++;

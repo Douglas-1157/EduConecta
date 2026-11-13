@@ -6,11 +6,11 @@ type A = (p: Estado, f: FormData) => Promise<Estado>;
 type D = { id: string; nome: string; area: string }; type C = { id: string; area: string; codigo: string; nome: string }; type T = { id: string; nome: string };
 type Q = { id: string; enunciado: string; disciplina_id: string; n: number; comp: string | null };
 
-export function Banco({ disciplinas, competencias, turmas, modulos, questoes, criarQuestao, criarSimulado }: {
+export function Banco({ disciplinas, competencias, turmas, modulos, questoes, criarQuestao, criarSimulado, padrao }: { padrao?: string;
   disciplinas: D[]; competencias: C[]; turmas: T[]; modulos: { id: string; nome: string; disciplina_id: string }[]; questoes: Q[]; criarQuestao: A; criarSimulado: A;
 }) {
   const [aba, setAba] = useState<'banco' | 'nova' | 'simulado'>('banco'); const [fd, setFd] = useState('');
-  const [d, setD] = useState(disciplinas[0]?.id ?? '');
+  const [d, setD] = useState(disciplinas.find(x => x.id === padrao)?.id ?? disciplinas[0]?.id ?? '');
   const area = disciplinas.find(x => x.id === d)?.area;
   const lista = questoes.filter(q => !fd || q.disciplina_id === fd);
   return (

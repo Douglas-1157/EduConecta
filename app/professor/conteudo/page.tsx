@@ -22,7 +22,7 @@ export default async function Conteudo() {
       <div><h1 className="h1">Conteúdo</h1><p className="sub">Publique uma vez e escolha quais turmas recebem. Aulas, apostilas e simulados entram na trilha de cada disciplina.</p></div>
       <div className="cols">
         <div className="card"><h2 className="h2">Nova aula ou apostila</h2>
-          <FormItem disciplinas={disc ?? []} modulos={mods ?? []} competencias={comps ?? []} turmas={turmas ?? []} action={publicarItem} /></div>
+          <FormItem padrao={perfil.disciplina_id ?? undefined} disciplinas={disc ?? []} modulos={mods ?? []} competencias={comps ?? []} turmas={turmas ?? []} action={publicarItem} /></div>
         <div className="stack">
           <div className="card"><h2 className="h2" style={{ marginBottom: 6 }}>Publicados recentemente</h2>
             <div className="list">{itens?.length ? itens.map((i: any) => (

@@ -8,11 +8,12 @@ export default async function ProfessorLayout({ children }: { children: React.Re
   const { perfil, db } = await exigirPerfil();
   if (perfil.papel === 'aluno') redirect('/aluno');
   const cont = async (t: string, f: (q: any) => any) => (await f(db.from(t).select('id', { count: 'exact', head: true }))).count ?? 0;
-  const [duvidas, redacoes, cadastros] = await Promise.all([
+  const [duvidas, redacoes, cadastros, disc] = await Promise.all([
     cont('duvidas', q => q.eq('status', 'pendente')),
     cont('redacoes', q => q.eq('status', 'enviada')),
     perfil.papel === 'gestao' ? cont('profiles', q => q.eq('status', 'pendente')) : Promise.resolve(0),
+    perfil.disciplina_id ? db.from('disciplinas').select('nome').eq('id', perfil.disciplina_id).maybeSingle().then(r => (r.data as any)?.nome as string | undefined) : Promise.resolve(undefined),
   ]);
   const { menu, extra } = menuDe(perfil.papel, { duvidas, redacoes, cadastros });
-  return <Shell menu={menu} extra={extra} nome={perfil.nome} papel={perfil.papel === 'gestao' ? 'Gestão' : 'Professor'}>{children}</Shell>;
+  return <Shell menu={menu} extra={extra} nome={perfil.nome} papel={(perfil.papel === 'gestao' ? 'Gestão' : 'Professor') + (disc ? ` · ${disc}` : '')}>{children}</Shell>;
 }

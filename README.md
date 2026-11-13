@@ -86,3 +86,8 @@ Sem a chave o sistema funciona normalmente, só não envia e-mails. Avisos: cada
 ## Recuperação de senha
 Telas: `/recuperar` (pede o e-mail) e `/redefinir` (nova senha). No Supabase, em Authentication → URL Configuration, o Site URL e a Redirect URL `https://SEU-SITE/**` precisam estar cadastrados.
 Atenção: o envio de e-mail padrão do Supabase só entrega para membros da equipe do projeto. Para os alunos receberem, configure um SMTP próprio (Authentication → Emails → SMTP Settings; o Resend oferece SMTP).
+
+## Primeiro acesso e escopo do professor
+- Contas criadas pela gestão (professores e importação por planilha) entram com senha provisória e são levadas a `/trocar-senha` antes de usar o sistema.
+- Rode `0008_escopo_professor.sql`. Antes, vincule cada professor às suas turmas (Gestão → Cadastros). Professor sem turma vinculada não vê alunos nem turmas.
+- Limite de PDF: 10 MB (comprimir em ilovepdf.com ou smallpdf.com). A tela da gestão mostra o espaço usado (plano gratuito: 1 GB).
